@@ -1,0 +1,104 @@
+{
+  "Experiences": [
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "exp-1" },
+          "title": { "S": "Orbital Drift" },
+          "description": {
+            "S": "Float through a drifting orbital station and repair systems."
+          },
+          "imagePath": {
+            "S": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1400&q=80"
+          },
+          "avgTimeMinutes": { "N": "18" },
+          "minUsers": { "N": "1" },
+          "maxUsers": { "N": "4" },
+          "hardware": { "S": "VR Ready" },
+          "tags": { "L": [{ "S": "space" }, { "S": "co-op" }] },
+          "status": { "S": "ACTIVE" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "exp-2" },
+          "title": { "S": "Neon Forge" },
+          "description": {
+            "S": "Build reactive neon sculptures in a shared workshop."
+          },
+          "imagePath": {
+            "S": "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1400&q=80"
+          },
+          "avgTimeMinutes": { "N": "12" },
+          "minUsers": { "N": "1" },
+          "maxUsers": { "N": "3" },
+          "hardware": { "S": "WebGL" },
+          "tags": { "L": [{ "S": "creative" }, { "S": "solo" }] },
+          "status": { "S": "ACTIVE" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "exp-3" },
+          "title": { "S": "Deep Reef Dive" },
+          "description": {
+            "S": "Explore a bioluminescent reef and catalog species."
+          },
+          "imagePath": {
+            "S": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80"
+          },
+          "avgTimeMinutes": { "N": "20" },
+          "minUsers": { "N": "1" },
+          "maxUsers": { "N": "2" },
+          "hardware": { "S": "WebGL" },
+          "tags": { "L": [{ "S": "exploration" }, { "S": "calm" }] },
+          "status": { "S": "ACTIVE" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "exp-4" },
+          "title": { "S": "Castle Siege" },
+          "description": {
+            "S": "Coordinate defenses and repel incoming waves."
+          },
+          "imagePath": {
+            "S": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80"
+          },
+          "avgTimeMinutes": { "N": "25" },
+          "minUsers": { "N": "2" },
+          "maxUsers": { "N": "6" },
+          "hardware": { "S": "VR Ready" },
+          "tags": { "L": [{ "S": "teamwork" }, { "S": "strategy" }] },
+          "status": { "S": "ACTIVE" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "exp-5" },
+          "title": { "S": "Skybound Arena" },
+          "description": {
+            "S": "Compete on floating platforms in a shifting sky arena."
+          },
+          "imagePath": {
+            "S": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80"
+          },
+          "avgTimeMinutes": { "N": "15" },
+          "minUsers": { "N": "2" },
+          "maxUsers": { "N": "8" },
+          "hardware": { "S": "WebGL" },
+          "tags": { "L": [{ "S": "competitive" }, { "S": "fast" }] },
+          "status": { "S": "COMING_SOON" }
+        }
+      }
+    }
+  ]
+}

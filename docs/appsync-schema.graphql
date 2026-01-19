@@ -1,0 +1,40 @@
+type Experience {
+  id: ID!
+  title: String!
+  description: String!
+  imagePath: String
+  avgTimeMinutes: Int
+  minUsers: Int
+  maxUsers: Int
+  hardware: String
+  tags: [String!]
+  status: String!
+}
+
+type ExperienceAccess {
+  userId: ID!
+  experienceId: ID!
+  hasAccess: Boolean!
+  lockReason: String
+}
+
+type ExperienceResult {
+  id: ID!
+  title: String!
+  description: String!
+  imagePath: String
+  avgTimeMinutes: Int
+  minUsers: Int
+  maxUsers: Int
+  hardware: String
+  tags: [String!]
+  status: String!
+  hasAccess: Boolean!
+  lockReason: String
+  statusLabel: String
+}
+
+type Query {
+  listExperiencesForUser: [ExperienceResult!]!
+  getExperience(id: ID!): Experience
+}

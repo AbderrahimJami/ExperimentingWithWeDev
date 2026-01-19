@@ -1,0 +1,54 @@
+{
+  "ExperienceAccess": [
+    {
+      "PutRequest": {
+        "Item": {
+          "userId": { "S": "06d2a2c4-90b1-70ac-32b2-559cfb106f22" },
+          "experienceId": { "S": "exp-1" },
+          "hasAccess": { "BOOL": true },
+          "lockReason": { "NULL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "userId": { "S": "06d2a2c4-90b1-70ac-32b2-559cfb106f22" },
+          "experienceId": { "S": "exp-2" },
+          "hasAccess": { "BOOL": true },
+          "lockReason": { "NULL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "userId": { "S": "COGNITO_USER_SUB" },
+          "experienceId": { "S": "exp-3" },
+          "hasAccess": { "BOOL": true },
+          "lockReason": { "NULL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "userId": { "S": "COGNITO_USER_SUB" },
+          "experienceId": { "S": "exp-4" },
+          "hasAccess": { "BOOL": false },
+          "lockReason": { "S": "Upgrade to Pro to unlock this experience." }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "userId": { "S": "COGNITO_USER_SUB" },
+          "experienceId": { "S": "exp-5" },
+          "hasAccess": { "BOOL": false },
+          "lockReason": { "S": "Coming soon — check back later." }
+        }
+      }
+    }
+  ]
+}
