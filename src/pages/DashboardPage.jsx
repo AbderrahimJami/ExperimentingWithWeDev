@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
@@ -226,6 +226,7 @@ function ExperienceSpotlight({ experience, onAction, onDetails }) {
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [showLocked, setShowLocked] = useState(false);
   const catalogEnabled = isCatalogConfigured;
   const {
@@ -309,10 +310,7 @@ export default function DashboardPage() {
   };
 
   const handleDetails = (experience) => {
-    addToast({
-      message: `${experience.title} details are coming soon.`,
-      tone: "info",
-    });
+    navigate(`/experiences/${experience.id}`);
   };
 
   return (

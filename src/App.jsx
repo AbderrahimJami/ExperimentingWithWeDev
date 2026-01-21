@@ -7,6 +7,7 @@ import SignupPage from './pages/SignupPage'
 import ConfirmSignupPage from './pages/ConfirmSignupPage'
 import ConfirmSignInPage from './pages/ConfirmSignInPage'
 import DashboardPage from './pages/DashboardPage'
+import ExperiencePage from './pages/ExperiencePage'
 import SettingsPage from './pages/SettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -26,6 +27,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/experiences/:experienceId"
+            element={
+              <ProtectedRoute>
+                <ExperiencePage />
               </ProtectedRoute>
             }
           />
