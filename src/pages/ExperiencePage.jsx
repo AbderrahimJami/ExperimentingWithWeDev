@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
+import ExperienceSkeleton from "../components/ExperienceSkeleton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import {
@@ -223,11 +224,7 @@ export default function ExperiencePage() {
         </div>
       ) : null}
 
-      {isLoading ? (
-        <div className="mt-10 rounded-3xl border border-white/60 bg-white/80 px-6 py-8 text-sm text-slate shadow-soft">
-          Loading experience...
-        </div>
-      ) : null}
+      {isLoading ? <ExperienceSkeleton /> : null}
 
       {!isLoading && experience ? (
         <div className="mt-10 grid min-w-0 gap-12 lg:grid-cols-[0.9fr_1.1fr]">

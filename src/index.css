@@ -19,12 +19,8 @@ body {
   min-height: 100vh;
   font-family: "Manrope", sans-serif;
   color: #1f1a17;
-  background: radial-gradient(
-      circle at top left,
-      #ffffff 0%,
-      #f7f1e8 55%,
-      #efe1d2 100%
-    ),
+  background:
+    radial-gradient(circle at top left, #ffffff 0%, #f7f1e8 55%, #efe1d2 100%),
     radial-gradient(
       circle at 20% 20%,
       rgba(242, 195, 90, 0.35),
