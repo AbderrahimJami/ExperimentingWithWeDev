@@ -41,7 +41,10 @@ const normalizeExperience = (experience) => {
         experience.users ||
         "";
   const avgTime =
-    experience.avgTimeMinutes || experience.avgTime || experience.avg_time || "";
+    experience.avgTimeMinutes ||
+    experience.avgTime ||
+    experience.avg_time ||
+    "";
   const avgTimeLabel = avgTime
     ? typeof avgTime === "number"
       ? `${avgTime} min`
@@ -57,7 +60,8 @@ const normalizeExperience = (experience) => {
     id: experience.id,
     title: experience.title,
     description: experience.description,
-    imageUrl: experience.imageUrl || experience.imagePath || experience.image || "",
+    imageUrl:
+      experience.imageUrl || experience.imagePath || experience.image || "",
     avgTime: avgTimeLabel,
     usersRequired,
     hardware: experience.hardware || "",
@@ -74,7 +78,9 @@ const normalizeExperience = (experience) => {
 const buildHighlights = (experience) => {
   const highlights = [
     experience.avgTime ? `Average session: ${experience.avgTime}` : "",
-    experience.usersRequired ? `Best with ${experience.usersRequired} players` : "",
+    experience.usersRequired
+      ? `Best with ${experience.usersRequired} players`
+      : "",
     experience.hardware ? `Optimized for ${experience.hardware}` : "",
   ];
 
@@ -97,9 +103,7 @@ const buildRequirements = (experience) => {
 
 function ExperienceMedia({ src, alt }) {
   if (src) {
-    return (
-      <img src={src} alt={alt} className="h-full w-full object-cover" />
-    );
+    return <img src={src} alt={alt} className="h-full w-full object-cover" />;
   }
 
   return (
@@ -141,13 +145,13 @@ export default function ExperiencePage() {
 
   const normalizedExperiences = useMemo(
     () => items.map((experience) => normalizeExperience(experience)),
-    [items]
+    [items],
   );
 
   const experience = useMemo(
     () =>
       normalizedExperiences.find((item) => item.id === experienceId) || null,
-    [normalizedExperiences, experienceId]
+    [normalizedExperiences, experienceId],
   );
 
   const related = useMemo(
@@ -155,7 +159,7 @@ export default function ExperiencePage() {
       normalizedExperiences
         .filter((item) => item.id !== experienceId)
         .slice(0, 3),
-    [normalizedExperiences, experienceId]
+    [normalizedExperiences, experienceId],
   );
 
   const errorMessage = !catalogEnabled
@@ -226,8 +230,8 @@ export default function ExperiencePage() {
       ) : null}
 
       {!isLoading && experience ? (
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-10">
+        <div className="mt-10 grid min-w-0 gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="min-w-0 space-y-12">
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-3">
                 <span
@@ -250,17 +254,21 @@ export default function ExperiencePage() {
               <h2 className="font-display text-4xl text-ink">
                 {experience.title}
               </h2>
-              <p className="text-lg text-slate">{experience.description}</p>
+              <p className="break-words text-lg text-slate">
+                {experience.description}
+              </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Button onClick={handleAction}>{experience.cta}</Button>
                 <Button variant="secondary">Add to schedule</Button>
               </div>
               {experience.lockReason ? (
-                <p className="text-sm text-rose">{experience.lockReason}</p>
+                <p className="break-words text-sm text-rose">
+                  {experience.lockReason}
+                </p>
               ) : null}
             </div>
 
-            <section className="rounded-3xl border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
+            <section className="border-b border-white/60 pb-10">
               <SectionHeading
                 eyebrow="Quick facts"
                 title="At a glance"
@@ -277,7 +285,7 @@ export default function ExperiencePage() {
                   .map((item) => (
                     <div
                       key={item.label}
-                      className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3"
+                      className="rounded-xl border border-white/70 bg-white/80 px-4 py-3"
                     >
                       <p className="uppercase tracking-[0.2em] text-[0.55rem] text-slate/70">
                         {item.label}
@@ -290,7 +298,7 @@ export default function ExperiencePage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
+            <section className="border-b border-white/60 pb-10">
               <SectionHeading
                 eyebrow="Experience flow"
                 title="What you will do"
@@ -301,7 +309,7 @@ export default function ExperiencePage() {
                   highlights.map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <span className="mt-1 h-2 w-2 rounded-full bg-ink" />
-                      <span>{item}</span>
+                      <span className="break-words">{item}</span>
                     </li>
                   ))
                 ) : (
@@ -312,7 +320,7 @@ export default function ExperiencePage() {
               </ul>
             </section>
 
-            <section className="rounded-3xl border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
+            <section className="border-b border-white/60 pb-10">
               <SectionHeading
                 eyebrow="Compatibility"
                 title="Requirements"
@@ -328,7 +336,7 @@ export default function ExperiencePage() {
               </ul>
             </section>
 
-            <section className="rounded-3xl border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
+            <section className="border-b border-white/60 pb-10">
               <SectionHeading
                 eyebrow="Gallery"
                 title="Preview frames"
@@ -352,7 +360,7 @@ export default function ExperiencePage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
+            <section className="pb-2">
               <SectionHeading
                 eyebrow="More to explore"
                 title="Related experiences"
@@ -364,7 +372,7 @@ export default function ExperiencePage() {
                     <Link
                       key={item.id}
                       to={`/experiences/${item.id}`}
-                      className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-slate transition hover:border-ink/20"
+                      className="rounded-xl border border-white/70 bg-white/80 p-4 text-sm text-slate transition hover:border-ink/20"
                     >
                       <p className="font-semibold text-ink">{item.title}</p>
                       <p className="mt-1 text-xs text-slate">
@@ -381,9 +389,9 @@ export default function ExperiencePage() {
             </section>
           </div>
 
-          <aside className="h-fit lg:sticky lg:top-24">
+          <aside className="h-fit min-w-0 lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
-              <div className="relative aspect-video">
+              <div className="relative aspect-[16/10] min-h-[360px]">
                 {experience.trailerUrl ? (
                   <video
                     controls
@@ -403,17 +411,17 @@ export default function ExperiencePage() {
                   Trailer preview
                 </div>
               </div>
-              <div className="space-y-3 p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate">
-                  Trailer
-                </p>
-                <h3 className="font-display text-xl text-ink">
-                  Watch the experience
-                </h3>
-                <p className="text-sm text-slate">
-                  Get a feel for the interaction style before you launch.
-                </p>
-              </div>
+            </div>
+            <div className="space-y-3 p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate">
+                Trailer
+              </p>
+              <h3 className="font-display text-xl text-ink">
+                Watch the experience
+              </h3>
+              <p className="text-sm text-slate">
+                Get a feel for the interaction style before you launch.
+              </p>
             </div>
           </aside>
         </div>
