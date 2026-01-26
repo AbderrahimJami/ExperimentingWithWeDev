@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
 import ExperienceSkeleton from "../components/ExperienceSkeleton";
@@ -132,6 +132,8 @@ export default function ExperiencePage() {
   const { experienceId } = useParams();
   const { user } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const catalogEnabled = isCatalogConfigured;
 
   const {
@@ -182,9 +184,9 @@ export default function ExperiencePage() {
       return;
     }
 
-    addToast({
-      message: `Launching ${experience.title}...`,
-      tone: "success",
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    navigate(`/experiences/${experience.id}/launch`, {
+      state: { from: location },
     });
   };
 

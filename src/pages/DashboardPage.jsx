@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
 import DashboardSkeleton from "../components/DashboardSkeleton";
@@ -224,6 +224,7 @@ export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showLocked, setShowLocked] = useState(false);
   const catalogEnabled = isCatalogConfigured;
   const {
@@ -299,9 +300,9 @@ export default function DashboardPage() {
       return;
     }
 
-    addToast({
-      message: `Launching ${experience.title}...`,
-      tone: "success",
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    navigate(`/experiences/${experience.id}/launch`, {
+      state: { from: location },
     });
   };
 
