@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
 import DashboardSkeleton from "../components/DashboardSkeleton";
@@ -42,7 +43,10 @@ const normalizeExperience = (experience) => {
         experience.users ||
         "";
   const avgTime =
-    experience.avgTimeMinutes || experience.avgTime || experience.avg_time || "";
+    experience.avgTimeMinutes ||
+    experience.avgTime ||
+    experience.avg_time ||
+    "";
   const avgTimeLabel = avgTime
     ? typeof avgTime === "number"
       ? `${avgTime} min`
@@ -58,7 +62,8 @@ const normalizeExperience = (experience) => {
     id: experience.id,
     title: experience.title,
     description: experience.description,
-    imageUrl: experience.imageUrl || experience.imagePath || experience.image || "",
+    imageUrl:
+      experience.imageUrl || experience.imagePath || experience.image || "",
     avgTime: avgTimeLabel,
     usersRequired,
     hardware: experience.hardware || "",
@@ -113,9 +118,22 @@ function ExperienceImage({ imageUrl, alt }) {
 
 function ExperienceCard({ experience, onAction, onDetails }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 18 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { type: "spring", stiffness: 190, damping: 13 },
+        },
+      }}
+      className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur"
+    >
       <div className="relative h-44">
-        <ExperienceImage imageUrl={experience.imageUrl} alt={experience.title} />
+        <ExperienceImage
+          imageUrl={experience.imageUrl}
+          alt={experience.title}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
         <span
           className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-xs font-semibold ${
@@ -157,7 +175,7 @@ function ExperienceCard({ experience, onAction, onDetails }) {
           </Button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -166,7 +184,10 @@ function ExperienceSpotlight({ experience, onAction, onDetails }) {
     <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[260px]">
-          <ExperienceImage imageUrl={experience.imageUrl} alt={experience.title} />
+          <ExperienceImage
+            imageUrl={experience.imageUrl}
+            alt={experience.title}
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-ink/75 via-ink/20 to-transparent" />
           <div className="absolute bottom-6 left-6 space-y-2">
             <span
@@ -225,7 +246,7 @@ export default function DashboardPage() {
   const { addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showLocked, setShowLocked] = useState(false);
+  const [showLocked, setShowLocked] = useState(true);
   const catalogEnabled = isCatalogConfigured;
   const {
     data: items = [],
@@ -245,12 +266,12 @@ export default function DashboardPage() {
 
   const normalizedExperiences = useMemo(
     () => items.map((experience) => normalizeExperience(experience)),
-    [items]
+    [items],
   );
 
   const { totalCount, accessibleCount, lockedCount } = useMemo(() => {
     const accessible = normalizedExperiences.filter(
-      (experience) => !experience.requiresAccess
+      (experience) => !experience.requiresAccess,
     ).length;
     return {
       totalCount: normalizedExperiences.length,
@@ -264,7 +285,7 @@ export default function DashboardPage() {
       return normalizedExperiences;
     }
     return normalizedExperiences.filter(
-      (experience) => !experience.requiresAccess
+      (experience) => !experience.requiresAccess,
     );
   }, [normalizedExperiences, showLocked]);
 
@@ -276,8 +297,18 @@ export default function DashboardPage() {
 
   const spotlight = filteredExperiences[0];
   const gridExperiences = filteredExperiences.filter(
-    (experience) => experience.id !== spotlight?.id
+    (experience) => experience.id !== spotlight?.id,
   );
+
+  const listVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.16,
+        delayChildren: 0.12,
+      },
+    },
+  };
 
   const handleSignOut = async () => {
     try {
@@ -366,16 +397,21 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-8 space-y-10">
-            {spotlight ? (
+            {/* {spotlight ? (
               <ExperienceSpotlight
                 experience={spotlight}
                 onAction={handleAction}
                 onDetails={handleDetails}
               />
-            ) : null}
+            ) : null} */}
 
             {gridExperiences.length ? (
-              <div className="grid gap-6 md:grid-cols-2">
+              <motion.div
+                className="grid gap-6 md:grid-cols-2"
+                variants={listVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {gridExperiences.map((experience) => (
                   <ExperienceCard
                     key={experience.id}
@@ -384,7 +420,7 @@ export default function DashboardPage() {
                     onDetails={handleDetails}
                   />
                 ))}
-              </div>
+              </motion.div>
             ) : null}
 
             {!filteredExperiences.length && !errorMessage ? (
