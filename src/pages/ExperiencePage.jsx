@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import Button from "../components/Button";
 import ExperienceSkeleton from "../components/ExperienceSkeleton";
@@ -231,7 +232,12 @@ export default function ExperiencePage() {
       {!isLoading && experience ? (
         <div className="mt-10 grid min-w-0 gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="min-w-0 space-y-12">
-            <div className="space-y-5">
+            <motion.div
+              className="space-y-5"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <div className="flex flex-wrap items-center gap-3">
                 <span
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${
@@ -265,9 +271,15 @@ export default function ExperiencePage() {
                   {experience.lockReason}
                 </p>
               ) : null}
-            </div>
+            </motion.div>
 
-            <section className="border-b border-white/60 pb-10">
+            <motion.section
+              className="border-b border-white/60 pb-10"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <SectionHeading
                 eyebrow="Quick facts"
                 title="At a glance"
@@ -295,9 +307,15 @@ export default function ExperiencePage() {
                     </div>
                   ))}
               </div>
-            </section>
+            </motion.section>
 
-            <section className="border-b border-white/60 pb-10">
+            <motion.section
+              className="border-b border-white/60 pb-10"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <SectionHeading
                 eyebrow="Experience flow"
                 title="What you will do"
@@ -317,9 +335,15 @@ export default function ExperiencePage() {
                   </li>
                 )}
               </ul>
-            </section>
+            </motion.section>
 
-            <section className="border-b border-white/60 pb-10">
+            <motion.section
+              className="border-b border-white/60 pb-10"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <SectionHeading
                 eyebrow="Compatibility"
                 title="Requirements"
@@ -333,9 +357,15 @@ export default function ExperiencePage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </motion.section>
 
-            <section className="border-b border-white/60 pb-10">
+            <motion.section
+              className="border-b border-white/60 pb-10"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <SectionHeading
                 eyebrow="Gallery"
                 title="Preview frames"
@@ -357,9 +387,15 @@ export default function ExperiencePage() {
                   </div>
                 )}
               </div>
-            </section>
+            </motion.section>
 
-            <section className="pb-2">
+            <motion.section
+              className="pb-2"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <SectionHeading
                 eyebrow="More to explore"
                 title="Related experiences"
@@ -385,10 +421,15 @@ export default function ExperiencePage() {
                   </p>
                 )}
               </div>
-            </section>
+            </motion.section>
           </div>
 
-          <aside className="h-fit min-w-0 lg:sticky lg:top-24">
+          <motion.aside
+            className="h-fit min-w-0 lg:sticky lg:top-24"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+          >
             <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
               <div className="relative aspect-[16/10] min-h-[360px]">
                 {experience.trailerUrl ? (
@@ -422,7 +463,7 @@ export default function ExperiencePage() {
                 Get a feel for the interaction style before you launch.
               </p>
             </div>
-          </aside>
+          </motion.aside>
         </div>
       ) : null}
 
