@@ -7,86 +7,16 @@ import {
   fetchExperiencesForUser,
   isCatalogConfigured,
 } from "../services/catalogService";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  BarChart3,
+  Settings,
+  Flag,
+  LogOut,
+  RotateCcw,
+} from "lucide-react";
 
 const iconClasses = "h-5 w-5";
-
-const icons = {
-  settings: (
-    <svg viewBox="0 0 24 24" fill="none" className={iconClasses}>
-      <path
-        d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M19.4 15.1c.3-.6.5-1.3.6-2l1.7-1.3-1.9-3.3-2.1.4a7.1 7.1 0 0 0-1.7-1l-.4-2.1H8.4l-.4 2.1c-.6.2-1.2.6-1.7 1L4.2 8.5 2.3 11.8 4 13c.1.7.3 1.4.6 2l-1.2 1.8 2.9 2.4 1.8-1.2c.6.4 1.2.7 1.9.9l.4 2.1h5.2l.4-2.1c.7-.2 1.3-.5 1.9-.9l1.8 1.2 2.9-2.4-1.2-1.8Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  metrics: (
-    <svg viewBox="0 0 24 24" fill="none" className={iconClasses}>
-      <path
-        d="M4 20V10m6 10V4m6 16v-7m4 7H2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  ),
-  report: (
-    <svg viewBox="0 0 24 24" fill="none" className={iconClasses}>
-      <path
-        d="M6 4h8l4 4v12H6V4Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 4v4h4M8.5 12h7M8.5 16h5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  ),
-  quit: (
-    <svg viewBox="0 0 24 24" fill="none" className={iconClasses}>
-      <path
-        d="M9 6h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="m12 8-4 4 4 4M4 12h8"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-  loading: (
-    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
-      <path
-        d="M20 12a8 8 0 1 1-4-6.93"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M16 4v4h-4"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  ),
-};
 
 const normalizeExperience = (experience) => {
   const hasAccess =
@@ -134,8 +64,10 @@ export default function ExperienceLaunchPage() {
     Boolean(document.fullscreenElement),
   );
   const [isPortrait, setIsPortrait] = useState(false);
+  const [uiVisible, setUiVisible] = useState(true);
   const catalogEnabled = isCatalogConfigured;
   const exitIntentRef = useRef(false);
+  const idleTimerRef = useRef(null);
 
   const { data: items = [] } = useQuery({
     queryKey: ["experiences", user?.email],
@@ -210,6 +142,37 @@ export default function ExperienceLaunchPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const resetIdleTimer = () => {
+      setUiVisible(true);
+      if (idleTimerRef.current) {
+        window.clearTimeout(idleTimerRef.current);
+      }
+      if (phase !== "ready" || showExitConfirm) {
+        return;
+      }
+      idleTimerRef.current = window.setTimeout(() => {
+        setUiVisible(false);
+      }, 2500);
+    };
+
+    resetIdleTimer();
+
+    const events = ["mousemove", "touchstart", "touchmove", "keydown"];
+    events.forEach((eventName) =>
+      window.addEventListener(eventName, resetIdleTimer),
+    );
+
+    return () => {
+      if (idleTimerRef.current) {
+        window.clearTimeout(idleTimerRef.current);
+      }
+      events.forEach((eventName) =>
+        window.removeEventListener(eventName, resetIdleTimer),
+      );
+    };
+  }, [phase, showExitConfirm]);
+
   const exitSession = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen?.();
@@ -246,65 +209,109 @@ export default function ExperienceLaunchPage() {
       <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-brand/20 blur-3xl" />
       <div className="absolute bottom-0 left-10 h-72 w-72 rounded-full bg-rose/20 blur-3xl" />
 
-      <div className="relative z-10 flex min-h-screen flex-col gap-8 px-6 py-8 md:px-12 md:py-10">
+      <div
+        className="relative z-10 h-screen px-6 md:px-12"
+        style={{ cursor: uiVisible || showExitConfirm ? "default" : "none" }}
+      >
         {isPortrait ? (
-          <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-sand/80">
-            Rotate your device for the best experience.
+          <div className="pointer-events-none absolute left-6 right-6 top-4 z-30 md:left-12 md:right-12">
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-sand/80">
+              Rotate your device for the best experience.
+            </div>
           </div>
         ) : null}
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
-              Experience
-            </p>
-            <h1 className="mt-2 font-display text-3xl text-sand">
-              {experience?.title || "Launching experience"}
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-sand/70">
-            <span className="rounded-full border border-white/20 px-3 py-1">
-              Session loading
-            </span>
-            <span className="hidden sm:inline">
-              User: {user?.email || "Guest"}
-            </span>
-          </div>
-        </header>
-
-        <main className="flex flex-1 flex-col items-center justify-center text-center">
-          {phase === "loading" ? (
-            <div className="space-y-4">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/5">
-                <div className="animate-spin">{icons.loading}</div>
-              </div>
-              <p className="text-lg font-semibold text-sand">
-                Preparing the experience...
-              </p>
-              <p className="text-sm text-sand/70">
-                Syncing assets, booting the session, and checking network
-                conditions.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm uppercase tracking-[0.3em] text-sand/60">
-                Live session
-              </p>
-              <h2 className="font-display text-2xl text-sand">
-                Experience overlay ready
-              </h2>
-              <p className="text-sm text-sand/70">
-                Placeholder UI is ready. Swap this with the actual experience
-                surface when your backend is live.
-              </p>
-            </div>
-          )}
+        <main className="flex h-full flex-col items-center justify-center text-center py-8 md:py-10">
+          <AnimatePresence mode="wait">
+            {phase === "loading" ? (
+              <motion.div
+                key="loading"
+                className="space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/5">
+                  <div className="animate-spin-reverse">
+                    <RotateCcw className="h-6 w-6" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-sand">
+                  Preparing the experience...
+                </p>
+                <p className="text-sm text-sand/70">
+                  Syncing assets, booting the session, and checking network
+                  conditions.
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="ready"
+                className="space-y-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="text-sm uppercase tracking-[0.3em] text-sand/60">
+                  Live session
+                </p>
+                <h2 className="font-display text-2xl text-sand">
+                  Experience overlay ready
+                </h2>
+                <p className="text-sm text-sand/70">
+                  Placeholder UI is ready. Swap this with the actual experience
+                  surface when your backend is live.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
-        <footer className="space-y-4">
-          {!isFullscreen ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-sand/70">
-              <span>Not in fullscreen mode.</span>
+        <AnimatePresence>
+          {uiVisible || showExitConfirm ? (
+            <motion.header
+              className="pointer-events-none absolute left-0 right-0 top-6 z-20 px-6 md:px-12"
+              initial={{ opacity: 0, y: -16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
+                    Experience
+                  </p>
+                  <h1 className="mt-2 font-display text-3xl text-sand">
+                    {experience?.title || "Launching experience"}
+                  </h1>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-sand/70">
+                  <span className="rounded-full border border-white/20 px-3 py-1">
+                    Session loading
+                  </span>
+                  <span className="hidden sm:inline">
+                    User: {user?.email || "Guest"}
+                  </span>
+                </div>
+              </div>
+            </motion.header>
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {uiVisible || showExitConfirm ? (
+            <motion.footer
+              className="pointer-events-none absolute bottom-6 left-0 right-0 z-20 px-6 md:px-12"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="pointer-events-auto space-y-4">
+              {!isFullscreen ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-sand/70">
+                  <span>Not in fullscreen mode.</span>
               <button
                 type="button"
                 onClick={() =>
@@ -329,22 +336,22 @@ export default function ExperienceLaunchPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <IconButton label="Quit" tone="danger" onClick={handleQuitClick}>
-                {icons.quit}
+                <LogOut className={iconClasses} />
               </IconButton>
               <IconButton label="Settings" onClick={() => {}}>
-                {icons.settings}
+                <Settings className={iconClasses} />
               </IconButton>
               <IconButton
                 label="Metrics"
                 onClick={() => setShowMetrics((prev) => !prev)}
               >
-                {icons.metrics}
+                <BarChart3 className={iconClasses} />
               </IconButton>
               <IconButton
                 label="Report"
                 onClick={() => window.alert("Reporting is not available yet.")}
               >
-                {icons.report}
+                <Flag className={iconClasses} />
               </IconButton>
             </div>
             <div className="text-xs text-sand/60">
@@ -376,31 +383,47 @@ export default function ExperienceLaunchPage() {
           <div className="text-xs text-sand/50">
             Tip: press Esc to exit fullscreen or use the Quit button.
           </div>
-        </footer>
+              </div>
+            </motion.footer>
+          ) : null}
+        </AnimatePresence>
       </div>
 
-      {showExitConfirm ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/70 px-6 text-sand">
-          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-ink/90 p-6 text-center shadow-soft">
-            <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
-              Leave experience?
-            </p>
-            <h2 className="mt-3 font-display text-2xl text-sand">
-              Do you want to quit this session?
-            </h2>
-            <p className="mt-3 text-sm text-sand/70">
-              You can re-enter fullscreen and keep exploring, or exit back to
-              the catalog.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button variant="secondary" onClick={handleStay}>
-                Stay in experience
-              </Button>
-              <Button onClick={handleConfirmQuit}>Quit</Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AnimatePresence>
+        {showExitConfirm ? (
+          <motion.div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-ink/70 px-6 text-sand"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-md rounded-3xl border border-white/15 bg-ink/90 p-6 text-center shadow-soft"
+              initial={{ scale: 0.96, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.96, y: 12, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
+                Leave experience?
+              </p>
+              <h2 className="mt-3 font-display text-2xl text-sand">
+                Do you want to quit this session?
+              </h2>
+              <p className="mt-3 text-sm text-sand/70">
+                You can re-enter fullscreen and keep exploring, or exit back to
+                the catalog.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Button variant="secondary" onClick={handleStay}>
+                  Stay in experience
+                </Button>
+                <Button onClick={handleConfirmQuit}>Quit</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
