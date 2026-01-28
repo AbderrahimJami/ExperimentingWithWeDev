@@ -98,3 +98,13 @@ o .reveal-delay-2 {
     background-position: -100% 0;
   }
 }
+
+@keyframes spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1s linear infinite;
+}
