@@ -127,6 +127,11 @@ function ExperienceCard({ experience, onAction, onDetails }) {
           transition: { type: "spring", stiffness: 190, damping: 13 },
         },
       }}
+      whileHover={{
+        scale: 1.01,
+        boxShadow: "0 18px 40px rgba(24, 23, 21, 0.12)",
+      }}
+      transition={{ type: "spring", stiffness: 220, damping: 20 }}
       className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur"
     >
       <div className="relative h-44">
@@ -181,7 +186,16 @@ function ExperienceCard({ experience, onAction, onDetails }) {
 
 function ExperienceSpotlight({ experience, onAction, onDetails }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{
+        scale: 1.01,
+        boxShadow: "0 22px 48px rgba(24, 23, 21, 0.14)",
+      }}
+      transition={{ type: "spring", stiffness: 200, damping: 18 }}
+      className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur"
+    >
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[260px]">
           <ExperienceImage
@@ -237,7 +251,7 @@ function ExperienceSpotlight({ experience, onAction, onDetails }) {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -397,13 +411,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-8 space-y-10">
-            {/* {spotlight ? (
+            {spotlight ? (
               <ExperienceSpotlight
                 experience={spotlight}
                 onAction={handleAction}
                 onDetails={handleDetails}
               />
-            ) : null} */}
+            ) : null}
 
             {gridExperiences.length ? (
               <motion.div
