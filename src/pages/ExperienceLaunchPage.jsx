@@ -75,14 +75,14 @@ export default function ExperienceLaunchPage() {
   const { user } = useAuth();
 
   const [streamState, setStreamState] = useState(
-    isPixelStreamingConfigured ? "connecting" : "loading"
+    isPixelStreamingConfigured ? "connecting" : "loading",
   );
   const [streamError, setStreamError] = useState("");
   const [showMetrics, setShowMetrics] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(
-    Boolean(document.fullscreenElement)
+    Boolean(document.fullscreenElement),
   );
   const [isPortrait, setIsPortrait] = useState(false);
   const [uiVisible, setUiVisible] = useState(true);
@@ -99,13 +99,17 @@ export default function ExperienceLaunchPage() {
   const sessionRef = useRef(null);
   const idleTimerRef = useRef(null);
   const exitIntentRef = useRef(false);
+  const statsHistoryRef = useRef({
+    bytesReceived: null,
+    timestamp: null,
+  });
 
   const catalogEnabled = isCatalogConfigured;
 
   useEffect(() => {
     console.log(
       "[PixelStreaming] VITE_PIXEL_STREAMING_URL =",
-      import.meta.env.VITE_PIXEL_STREAMING_URL || "(not set)"
+      import.meta.env.VITE_PIXEL_STREAMING_URL || "(not set)",
     );
   }, []);
   const { data: items = [] } = useQuery({
@@ -160,9 +164,34 @@ export default function ExperienceLaunchPage() {
           const packetLoss = totalPackets
             ? ((packetsLost / totalPackets) * 100).toFixed(1)
             : prev.packetLoss;
-          const bitrate = inboundVideo.bitrate
-            ? (inboundVideo.bitrate / 1000000).toFixed(1)
-            : prev.bitrate;
+          let bitrate = prev.bitrate;
+          if (inboundVideo.bitrate && inboundVideo.bitrate > 0) {
+            bitrate = (inboundVideo.bitrate / 1000000).toFixed(1);
+          } else if (
+            typeof inboundVideo.bytesReceived === "number" &&
+            typeof inboundVideo.timestamp === "number"
+          ) {
+            const lastBytes = statsHistoryRef.current.bytesReceived;
+            const lastTimestamp = statsHistoryRef.current.timestamp;
+            if (
+              typeof lastBytes === "number" &&
+              typeof lastTimestamp === "number"
+            ) {
+              const deltaBytes = inboundVideo.bytesReceived - lastBytes;
+              const deltaMs = inboundVideo.timestamp - lastTimestamp;
+              if (deltaBytes > 0 && deltaMs > 0) {
+                const computedMbps =
+                  (deltaBytes * 8) / (deltaMs / 1000) / 1000000;
+                if (Number.isFinite(computedMbps)) {
+                  bitrate = computedMbps.toFixed(1);
+                }
+              }
+            }
+            statsHistoryRef.current = {
+              bytesReceived: inboundVideo.bytesReceived,
+              timestamp: inboundVideo.timestamp,
+            };
+          }
           const fps = inboundVideo.framesPerSecond
             ? `${Math.round(inboundVideo.framesPerSecond)}`
             : prev.fps;
@@ -289,7 +318,7 @@ export default function ExperienceLaunchPage() {
 
     const keyboardAndTouchEvents = ["touchstart", "keydown"];
     keyboardAndTouchEvents.forEach((eventName) =>
-      window.addEventListener(eventName, resetIdleTimer)
+      window.addEventListener(eventName, resetIdleTimer),
     );
     window.addEventListener("pointermove", revealControlsFromPointer);
 
@@ -298,7 +327,7 @@ export default function ExperienceLaunchPage() {
         window.clearTimeout(idleTimerRef.current);
       }
       keyboardAndTouchEvents.forEach((eventName) =>
-        window.removeEventListener(eventName, resetIdleTimer)
+        window.removeEventListener(eventName, resetIdleTimer),
       );
       window.removeEventListener("pointermove", revealControlsFromPointer);
     };
@@ -368,7 +397,9 @@ export default function ExperienceLaunchPage() {
   };
 
   const showShell =
-    phase === "loading" || streamState === "error" || streamState === "reconnecting";
+    phase === "loading" ||
+    streamState === "error" ||
+    streamState === "reconnecting";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-ink text-sand">
@@ -415,7 +446,7 @@ export default function ExperienceLaunchPage() {
 
         <main className="pointer-events-none flex h-full flex-col items-center justify-center text-center py-8 md:py-10">
           <AnimatePresence mode="wait">
-            {phase === "loading" ? (
+            {showShell ? (
               <motion.div
                 key="loading"
                 className="space-y-4"
@@ -430,33 +461,15 @@ export default function ExperienceLaunchPage() {
                   </div>
                 </div>
                 <p className="text-lg font-semibold text-sand">
-                  {streamStateMessages[streamState] || "Preparing the experience..."}
+                  {streamStateMessages[streamState] ||
+                    "Preparing the experience..."}
                 </p>
                 <p className="text-sm text-sand/70">
                   {streamError ||
                     "Syncing assets, booting the session, and checking network conditions."}
                 </p>
               </motion.div>
-            ) : (
-              <motion.div
-                key="ready"
-                className="space-y-3"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                <p className="text-sm uppercase tracking-[0.3em] text-sand/60">
-                  Live session
-                </p>
-                <h2 className="font-display text-2xl text-sand">
-                  Experience stream ready
-                </h2>
-                <p className="text-sm text-sand/70">
-                  Overlay controls will auto-hide while the stream is active.
-                </p>
-              </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </main>
 
@@ -469,7 +482,7 @@ export default function ExperienceLaunchPage() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
             >
-                <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-ink/75 px-4 py-3 backdrop-blur-md">
+              <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-ink/75 px-4 py-3 backdrop-blur-md">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
                     Experience
@@ -482,7 +495,9 @@ export default function ExperienceLaunchPage() {
                   <span className="rounded-full border border-white/20 px-3 py-1">
                     {streamState === "streaming" ? "Live" : "Session loading"}
                   </span>
-                  <span className="hidden sm:inline">User: {user?.email || "Guest"}</span>
+                  <span className="hidden sm:inline">
+                    User: {user?.email || "Guest"}
+                  </span>
                 </div>
               </div>
             </motion.header>
@@ -505,7 +520,9 @@ export default function ExperienceLaunchPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        document.documentElement.requestFullscreen?.().catch(() => {})
+                        document.documentElement
+                          .requestFullscreen?.()
+                          .catch(() => {})
                       }
                       className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-sand transition hover:bg-white/10"
                     >
@@ -526,7 +543,11 @@ export default function ExperienceLaunchPage() {
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <IconButton label="Quit" tone="danger" onClick={handleQuitClick}>
+                    <IconButton
+                      label="Quit"
+                      tone="danger"
+                      onClick={handleQuitClick}
+                    >
                       <LogOut className={iconClasses} />
                     </IconButton>
                     <IconButton
@@ -543,29 +564,44 @@ export default function ExperienceLaunchPage() {
                     </IconButton>
                     <IconButton
                       label="Report"
-                      onClick={() => window.alert("Reporting is not available yet.")}
+                      onClick={() =>
+                        window.alert("Reporting is not available yet.")
+                      }
                     >
                       <Flag className={iconClasses} />
                     </IconButton>
                   </div>
                   <div className="text-xs text-sand/60">
-                    Resolution {metrics.resolution} · Latency {metrics.latency}ms · Region eu-west-2
+                    Resolution {metrics.resolution} · Latency {metrics.latency}
+                    ms · Region eu-west-2
                   </div>
                 </div>
 
                 {showMetrics ? (
                   <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4 text-xs text-sand/80 sm:grid-cols-3">
                     <div>
-                      <p className="uppercase tracking-[0.2em] text-sand/50">Bandwidth</p>
-                      <p className="mt-1 text-sm font-semibold text-sand">{metrics.bitrate} Mbps</p>
+                      <p className="uppercase tracking-[0.2em] text-sand/50">
+                        Bandwidth
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-sand">
+                        {metrics.bitrate} Mbps
+                      </p>
                     </div>
                     <div>
-                      <p className="uppercase tracking-[0.2em] text-sand/50">Packet loss</p>
-                      <p className="mt-1 text-sm font-semibold text-sand">{metrics.packetLoss}%</p>
+                      <p className="uppercase tracking-[0.2em] text-sand/50">
+                        Packet loss
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-sand">
+                        {metrics.packetLoss}%
+                      </p>
                     </div>
                     <div>
-                      <p className="uppercase tracking-[0.2em] text-sand/50">FPS</p>
-                      <p className="mt-1 text-sm font-semibold text-sand">{metrics.fps} fps</p>
+                      <p className="uppercase tracking-[0.2em] text-sand/50">
+                        FPS
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-sand">
+                        {metrics.fps} fps
+                      </p>
                     </div>
                   </div>
                 ) : null}
@@ -610,7 +646,7 @@ export default function ExperienceLaunchPage() {
                         onChange={(event) =>
                           toggleInputFlag(
                             "fakeMouseWithTouches",
-                            event.target.checked
+                            event.target.checked,
                           )
                         }
                       />
@@ -674,7 +710,8 @@ export default function ExperienceLaunchPage() {
                 Do you want to quit this session?
               </h2>
               <p className="mt-3 text-sm text-sand/70">
-                You can re-enter fullscreen and keep exploring, or exit back to the catalog.
+                You can re-enter fullscreen and keep exploring, or exit back to
+                the catalog.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Button variant="secondary" onClick={handleStay}>
