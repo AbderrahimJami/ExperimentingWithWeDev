@@ -99,6 +99,7 @@ export default function ExperienceLaunchPage() {
   const sessionRef = useRef(null);
   const idleTimerRef = useRef(null);
   const exitIntentRef = useRef(false);
+  const overlayActivityRef = useRef(() => {});
   const statsHistoryRef = useRef({
     bytesReceived: null,
     timestamp: null,
@@ -304,23 +305,34 @@ export default function ExperienceLaunchPage() {
       }, 2500);
     };
 
-    const revealControlsFromPointer = (event) => {
-      const edgeZone = 90;
-      const nearTop = event.clientY <= edgeZone;
-      const nearBottom = window.innerHeight - event.clientY <= edgeZone;
-
-      if (nearTop || nearBottom) {
-        resetIdleTimer();
-      }
-    };
+    overlayActivityRef.current = resetIdleTimer;
 
     resetIdleTimer();
 
-    const keyboardAndTouchEvents = ["touchstart", "keydown"];
+    const keyboardAndTouchEvents = ["touchstart"];
     keyboardAndTouchEvents.forEach((eventName) =>
       window.addEventListener(eventName, resetIdleTimer),
     );
-    window.addEventListener("pointermove", revealControlsFromPointer);
+
+    let holdTimer = null;
+    const handleKeyDown = (event) => {
+      if (event.code !== "Backquote" || event.repeat) {
+        return;
+      }
+      holdTimer = window.setTimeout(() => {
+        resetIdleTimer();
+      }, 550);
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.code === "Backquote" && holdTimer) {
+        window.clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       if (idleTimerRef.current) {
@@ -329,7 +341,11 @@ export default function ExperienceLaunchPage() {
       keyboardAndTouchEvents.forEach((eventName) =>
         window.removeEventListener(eventName, resetIdleTimer),
       );
-      window.removeEventListener("pointermove", revealControlsFromPointer);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      if (holdTimer) {
+        window.clearTimeout(holdTimer);
+      }
     };
   }, [phase, showExitConfirm]);
 
@@ -482,7 +498,11 @@ export default function ExperienceLaunchPage() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-ink/75 px-4 py-3 backdrop-blur-md">
+              <div
+                className="pointer-events-auto flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-ink/75 px-4 py-3 backdrop-blur-md"
+                onPointerMove={() => overlayActivityRef.current?.()}
+                onPointerDown={() => overlayActivityRef.current?.()}
+              >
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-sand/60">
                     Experience
@@ -513,7 +533,11 @@ export default function ExperienceLaunchPage() {
               exit={{ opacity: 0, y: 24 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="pointer-events-auto space-y-4 rounded-2xl border border-white/20 bg-ink/75 p-4 backdrop-blur-md">
+              <div
+                className="pointer-events-auto space-y-4 rounded-2xl border border-white/20 bg-ink/75 p-4 backdrop-blur-md"
+                onPointerMove={() => overlayActivityRef.current?.()}
+                onPointerDown={() => overlayActivityRef.current?.()}
+              >
                 {!isFullscreen ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-sand/70">
                     <span>Not in fullscreen mode.</span>
@@ -680,7 +704,7 @@ export default function ExperienceLaunchPage() {
                 ) : null}
 
                 <div className="text-xs text-sand/50">
-                  Tip: move cursor near top/bottom edge to reveal controls.
+                  Tip: hold the ` key for a moment to reveal controls.
                 </div>
               </div>
             </motion.footer>
