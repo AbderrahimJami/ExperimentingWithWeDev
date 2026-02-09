@@ -10,6 +10,10 @@ import {
   fetchExperiencesForUser,
   isCatalogConfigured,
 } from "../services/catalogService";
+import {
+  getExperienceLeaderboard,
+  isLeaderboardEnabledForExperience,
+} from "../services/leaderboardService";
 
 const statusStyles = {
   available: "border-brand/90 bg-brand/85 text-ink",
@@ -147,6 +151,21 @@ export default function ExperiencePage() {
     enabled: catalogEnabled,
   });
 
+  const leaderboardEnabled = useMemo(
+    () => isLeaderboardEnabledForExperience(experienceId),
+    [experienceId],
+  );
+
+  const {
+    data: leaderboardRows = [],
+    isLoading: isLeaderboardLoading,
+  } = useQuery({
+    queryKey: ["leaderboard", experienceId],
+    queryFn: () => getExperienceLeaderboard(experienceId),
+    enabled: leaderboardEnabled,
+    staleTime: 30_000,
+  });
+
   const normalizedExperiences = useMemo(
     () => items.map((experience) => normalizeExperience(experience)),
     [items],
@@ -230,241 +249,302 @@ export default function ExperiencePage() {
       {isLoading ? <ExperienceSkeleton /> : null}
 
       {!isLoading && experience ? (
-        <div className="mt-10 grid min-w-0 gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="min-w-0 space-y-12">
-            <motion.div
-              className="space-y-5"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <div className="flex flex-wrap items-center gap-3">
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    statusStyles[experience.status] || statusStyles.available
-                  }`}
-                >
-                  {experience.statusLabel}
-                </span>
-                {experience.requiresAccess ? (
-                  <span className="rounded-full border border-rose/40 bg-rose/10 px-3 py-1 text-xs font-semibold text-rose">
-                    Locked
+        <>
+          <div className="mt-10 grid min-w-0 gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="min-w-0 space-y-12">
+              <motion.div
+                className="space-y-5"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                      statusStyles[experience.status] || statusStyles.available
+                    }`}
+                  >
+                    {experience.statusLabel}
                   </span>
-                ) : (
-                  <span className="rounded-full border border-ink/10 bg-white px-3 py-1 text-xs font-semibold text-ink">
-                    Available now
-                  </span>
-                )}
-              </div>
-              <h2 className="font-display text-4xl text-ink">
-                {experience.title}
-              </h2>
-              <p className="break-words text-lg text-slate">
-                {experience.description}
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={handleAction}>{experience.cta}</Button>
-                <Button variant="secondary">Add to schedule</Button>
-              </div>
-              {experience.lockReason ? (
-                <p className="break-words text-sm text-rose">
-                  {experience.lockReason}
+                  {experience.requiresAccess ? (
+                    <span className="rounded-full border border-rose/40 bg-rose/10 px-3 py-1 text-xs font-semibold text-rose">
+                      Locked
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-ink/10 bg-white px-3 py-1 text-xs font-semibold text-ink">
+                      Available now
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-display text-4xl text-ink">
+                  {experience.title}
+                </h2>
+                <p className="break-words text-lg text-slate">
+                  {experience.description}
                 </p>
-              ) : null}
-            </motion.div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button onClick={handleAction}>{experience.cta}</Button>
+                  <Button variant="secondary">Add to schedule</Button>
+                </div>
+                {experience.lockReason ? (
+                  <p className="break-words text-sm text-rose">
+                    {experience.lockReason}
+                  </p>
+                ) : null}
+              </motion.div>
 
-            <motion.section
-              className="border-b border-white/60 pb-10"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SectionHeading
-                eyebrow="Quick facts"
-                title="At a glance"
-                copy="A fast read on time, players, and hardware."
-              />
-              <div className="mt-6 grid gap-4 text-xs text-slate sm:grid-cols-2">
-                {[
-                  { label: "Average time", value: experience.avgTime },
-                  { label: "Players", value: experience.usersRequired },
-                  { label: "Hardware", value: experience.hardware },
-                  { label: "Status", value: experience.statusLabel },
-                ]
-                  .filter((item) => item.value)
-                  .map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-xl border border-white/70 bg-white/80 px-4 py-3"
-                    >
-                      <p className="uppercase tracking-[0.2em] text-[0.55rem] text-slate/70">
-                        {item.label}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-ink">
-                        {item.value}
-                      </p>
-                    </div>
-                  ))}
-              </div>
-            </motion.section>
+              <motion.section
+                className="border-b border-white/60 pb-10"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <SectionHeading
+                  eyebrow="Quick facts"
+                  title="At a glance"
+                  copy="A fast read on time, players, and hardware."
+                />
+                <div className="mt-6 grid gap-4 text-xs text-slate sm:grid-cols-2">
+                  {[
+                    { label: "Average time", value: experience.avgTime },
+                    { label: "Players", value: experience.usersRequired },
+                    { label: "Hardware", value: experience.hardware },
+                    { label: "Status", value: experience.statusLabel },
+                  ]
+                    .filter((item) => item.value)
+                    .map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-xl border border-white/70 bg-white/80 px-4 py-3"
+                      >
+                        <p className="uppercase tracking-[0.2em] text-[0.55rem] text-slate/70">
+                          {item.label}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-ink">
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </motion.section>
 
-            <motion.section
-              className="border-b border-white/60 pb-10"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SectionHeading
-                eyebrow="Experience flow"
-                title="What you will do"
-                copy="A simple outline of what to expect during the session."
-              />
-              <ul className="mt-5 space-y-3 text-sm text-slate">
-                {highlights.length ? (
-                  highlights.map((item) => (
+              <motion.section
+                className="border-b border-white/60 pb-10"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <SectionHeading
+                  eyebrow="Experience flow"
+                  title="What you will do"
+                  copy="A simple outline of what to expect during the session."
+                />
+                <ul className="mt-5 space-y-3 text-sm text-slate">
+                  {highlights.length ? (
+                    highlights.map((item) => (
+                      <li key={item} className="flex items-start gap-3">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-ink" />
+                        <span className="break-words">{item}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-sm text-slate">
+                      Highlights will appear once more metadata is added.
+                    </li>
+                  )}
+                </ul>
+              </motion.section>
+
+              <motion.section
+                className="border-b border-white/60 pb-10"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <SectionHeading
+                  eyebrow="Compatibility"
+                  title="Requirements"
+                  copy="Make sure your setup is ready before launching."
+                />
+                <ul className="mt-5 space-y-3 text-sm text-slate">
+                  {requirements.map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <span className="mt-1 h-2 w-2 rounded-full bg-ink" />
-                      <span className="break-words">{item}</span>
+                      <span>{item}</span>
                     </li>
-                  ))
-                ) : (
-                  <li className="text-sm text-slate">
-                    Highlights will appear once more metadata is added.
-                  </li>
-                )}
-              </ul>
-            </motion.section>
+                  ))}
+                </ul>
+              </motion.section>
 
-            <motion.section
-              className="border-b border-white/60 pb-10"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SectionHeading
-                eyebrow="Compatibility"
-                title="Requirements"
-                copy="Make sure your setup is ready before launching."
-              />
-              <ul className="mt-5 space-y-3 text-sm text-slate">
-                {requirements.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-1 h-2 w-2 rounded-full bg-ink" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.section>
-
-            <motion.section
-              className="border-b border-white/60 pb-10"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SectionHeading
-                eyebrow="Gallery"
-                title="Preview frames"
-                copy="Still frames from the experience."
-              />
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                {galleryImages.length ? (
-                  galleryImages.map((image) => (
-                    <div
-                      key={image}
-                      className="overflow-hidden rounded-2xl border border-white/70 bg-white"
-                    >
-                      <ExperienceMedia src={image} alt={experience.title} />
+              <motion.section
+                className="border-b border-white/60 pb-10"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <SectionHeading
+                  eyebrow="Gallery"
+                  title="Preview frames"
+                  copy="Still frames from the experience."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  {galleryImages.length ? (
+                    galleryImages.map((image) => (
+                      <div
+                        key={image}
+                        className="overflow-hidden rounded-2xl border border-white/70 bg-white"
+                      >
+                        <ExperienceMedia src={image} alt={experience.title} />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-white/70 bg-white px-4 py-6 text-sm text-slate">
+                      No previews yet. Add images to populate the gallery.
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-white/70 bg-white px-4 py-6 text-sm text-slate">
-                    No previews yet. Add images to populate the gallery.
-                  </div>
-                )}
-              </div>
-            </motion.section>
+                  )}
+                </div>
+              </motion.section>
 
-            <motion.section
-              className="pb-2"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              <motion.section
+                className="pb-2"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <SectionHeading
+                  eyebrow="More to explore"
+                  title="Related experiences"
+                  copy="Explore other sessions in the catalog."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  {related.length ? (
+                    related.map((item) => (
+                      <Link
+                        key={item.id}
+                        to={`/experiences/${item.id}`}
+                        className="rounded-xl border border-white/70 bg-white/80 p-4 text-sm text-slate transition hover:border-ink/20"
+                      >
+                        <p className="font-semibold text-ink">{item.title}</p>
+                        <p className="mt-1 text-xs text-slate">
+                          {item.statusLabel}
+                        </p>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate">
+                      No related experiences yet.
+                    </p>
+                  )}
+                </div>
+              </motion.section>
+            </div>
+
+            <motion.aside
+              className="h-fit min-w-0 lg:sticky lg:top-24"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
             >
-              <SectionHeading
-                eyebrow="More to explore"
-                title="Related experiences"
-                copy="Explore other sessions in the catalog."
-              />
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                {related.length ? (
-                  related.map((item) => (
-                    <Link
-                      key={item.id}
-                      to={`/experiences/${item.id}`}
-                      className="rounded-xl border border-white/70 bg-white/80 p-4 text-sm text-slate transition hover:border-ink/20"
+              <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
+                <div className="relative aspect-[16/10] min-h-[360px]">
+                  {experience.trailerUrl ? (
+                    <video
+                      controls
+                      className="h-full w-full object-cover"
+                      poster={experience.imageUrl || undefined}
                     >
-                      <p className="font-semibold text-ink">{item.title}</p>
-                      <p className="mt-1 text-xs text-slate">
-                        {item.statusLabel}
-                      </p>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate">
-                    No related experiences yet.
-                  </p>
-                )}
-              </div>
-            </motion.section>
-          </div>
-
-          <motion.aside
-            className="h-fit min-w-0 lg:sticky lg:top-24"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-          >
-            <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 shadow-soft backdrop-blur">
-              <div className="relative aspect-[16/10] min-h-[360px]">
-                {experience.trailerUrl ? (
-                  <video
-                    controls
-                    className="h-full w-full object-cover"
-                    poster={experience.imageUrl || undefined}
-                  >
-                    <source src={experience.trailerUrl} />
-                  </video>
-                ) : (
-                  <ExperienceMedia
-                    src={experience.imageUrl}
-                    alt={experience.title}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent" />
-                <div className="absolute bottom-4 left-4 rounded-full border border-white/40 bg-ink/70 px-3 py-1 text-xs font-semibold text-sand">
-                  Trailer preview
+                      <source src={experience.trailerUrl} />
+                    </video>
+                  ) : (
+                    <ExperienceMedia
+                      src={experience.imageUrl}
+                      alt={experience.title}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent" />
+                  <div className="absolute bottom-4 left-4 rounded-full border border-white/40 bg-ink/70 px-3 py-1 text-xs font-semibold text-sand">
+                    Trailer preview
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="space-y-3 p-5">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate">
-                Trailer
-              </p>
-              <h3 className="font-display text-xl text-ink">
-                Watch the experience
-              </h3>
-              <p className="text-sm text-slate">
-                Get a feel for the interaction style before you launch.
-              </p>
-            </div>
-          </motion.aside>
-        </div>
+              <div className="space-y-3 p-5">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate">
+                  Trailer
+                </p>
+                <h3 className="font-display text-xl text-ink">
+                  Watch the experience
+                </h3>
+                <p className="text-sm text-slate">
+                  Get a feel for the interaction style before you launch.
+                </p>
+              </div>
+            </motion.aside>
+          </div>
+
+          {leaderboardEnabled ? (
+            <motion.section
+              className="mt-14 border-t border-white/60 pt-10"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <SectionHeading
+                eyebrow="Competition"
+                title="Leaderboard"
+                copy="Top scores for this experience."
+              />
+              <div className="mt-6 overflow-hidden rounded-2xl border border-white/70 bg-white/85">
+                <table className="w-full table-fixed text-sm text-slate">
+                  <thead className="border-b border-white/70 bg-sand/40 text-xs uppercase tracking-[0.2em] text-slate/90">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Username
+                      </th>
+                      <th className="px-4 py-3 text-right font-semibold">
+                        Final score
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLeaderboardLoading ? (
+                      <tr>
+                        <td className="px-4 py-4 text-slate" colSpan={2}>
+                          Loading leaderboard...
+                        </td>
+                      </tr>
+                    ) : leaderboardRows.length ? (
+                      leaderboardRows.map((row) => (
+                        <tr
+                          key={`${row.username}-${row.finalScore}`}
+                          className="border-t border-white/60"
+                        >
+                          <td className="truncate px-4 py-3 font-medium text-ink">
+                            {row.username}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-ink">
+                            {row.finalScore.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-4 py-4 text-slate" colSpan={2}>
+                          No scores yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.section>
+          ) : null}
+        </>
       ) : null}
 
       {!isLoading && !experience && !errorMessage ? (
