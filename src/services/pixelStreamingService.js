@@ -34,6 +34,8 @@ export function createPixelStreamingSession({
       [Flags.TouchInput]: true,
       [Flags.HoveringMouseMode]: false,
       [Flags.FakeMouseWithTouches]: false,
+      MaxReconnectAttempts: 999,
+      StreamerAutoJoinInterval: 2000,
     },
   });
 
@@ -41,34 +43,166 @@ export function createPixelStreamingSession({
     videoElementParent: container,
   });
 
+  let isDestroyed = false;
+  let isStreaming = false;
+  let reconnectTimer = null;
+  let healthTimer = null;
+  let reconnectAttempts = 0;
+  let lastStatsAt = 0;
+
+  const reconnectIntervalMs =
+    Number(import.meta.env.VITE_PIXEL_STREAMING_RETRY_MS) || 2500;
+  const maxReconnectAttempts =
+    Number(import.meta.env.VITE_PIXEL_STREAMING_MAX_RETRIES) || 0;
+  const streamHealthTimeoutMs =
+    Number(import.meta.env.VITE_PIXEL_STREAMING_HEALTH_TIMEOUT_MS) || 8000;
+  const healthCheckIntervalMs =
+    Number(import.meta.env.VITE_PIXEL_STREAMING_HEALTH_CHECK_MS) || 1500;
+
   const listeners = [];
   const addListener = (type, handler) => {
     pixelStreaming.addEventListener(type, handler);
     listeners.push({ type, handler });
   };
 
-  addListener("streamLoading", () => onStateChange?.("booting"));
-  addListener("streamConnect", () => onStateChange?.("connecting"));
-  addListener("webRtcConnecting", () => onStateChange?.("connecting"));
-  addListener("webRtcConnected", () => onStateChange?.("connected"));
-  addListener("videoInitialized", () => onStateChange?.("streaming"));
-  addListener("playStream", () => onStateChange?.("streaming"));
-  addListener("streamReconnect", () => onStateChange?.("reconnecting"));
-  addListener("statsReceived", (event) =>
-    onStats?.(event.data?.aggregatedStats || null)
-  );
-
-  const handleErrorState = (error) => {
-    onStateChange?.("error");
-    onError?.(error);
+  const clearReconnectTimer = () => {
+    if (reconnectTimer) {
+      window.clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
   };
 
-  addListener("webRtcFailed", handleErrorState);
-  addListener("webRtcDisconnected", handleErrorState);
-  addListener("subscribeFailed", handleErrorState);
-  addListener("playStreamError", handleErrorState);
+  const clearHealthTimer = () => {
+    if (healthTimer) {
+      window.clearInterval(healthTimer);
+      healthTimer = null;
+    }
+  };
+
+  const canRetry = () =>
+    maxReconnectAttempts <= 0 || reconnectAttempts < maxReconnectAttempts;
+
+  const beginReconnectLoop = (reason) => {
+    if (isDestroyed || isStreaming || reconnectTimer) {
+      return;
+    }
+
+    onStateChange?.("reconnecting");
+
+    const tryReconnect = () => {
+      if (isDestroyed || isStreaming) {
+        clearReconnectTimer();
+        return;
+      }
+
+      if (!canRetry()) {
+        onStateChange?.("error");
+        onError?.(
+          new Error(
+            reason ||
+              "Unable to recover the Pixel Streaming session after multiple retries.",
+          ),
+        );
+        clearReconnectTimer();
+        return;
+      }
+
+      reconnectAttempts += 1;
+
+      try {
+        if (typeof pixelStreaming.reconnect === "function") {
+          pixelStreaming.reconnect();
+        } else {
+          pixelStreaming.connect();
+        }
+      } catch (error) {
+        // Keep retry loop alive; some reconnect attempts can fail transiently.
+      }
+
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null;
+        tryReconnect();
+      }, reconnectIntervalMs);
+    };
+
+    tryReconnect();
+  };
+
+  const markStreaming = () => {
+    isStreaming = true;
+    reconnectAttempts = 0;
+    lastStatsAt = Date.now();
+    clearReconnectTimer();
+    onStateChange?.("streaming");
+  };
+
+  const startHealthMonitor = () => {
+    clearHealthTimer();
+    healthTimer = window.setInterval(() => {
+      if (isDestroyed || !isStreaming) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastStatsAt > streamHealthTimeoutMs) {
+        isStreaming = false;
+        beginReconnectLoop("Stream heartbeat lost.");
+      }
+    }, healthCheckIntervalMs);
+  };
+
+  addListener("streamLoading", () => onStateChange?.("booting"));
+  addListener("streamConnect", () => onStateChange?.("connecting"));
+  addListener("webRtcAutoConnect", () => onStateChange?.("connecting"));
+  addListener("webRtcConnecting", () => onStateChange?.("connecting"));
+  addListener("webRtcConnected", () => onStateChange?.("connected"));
+  addListener("videoInitialized", markStreaming);
+  addListener("playStream", markStreaming);
+  addListener("streamReconnect", () => {
+    isStreaming = false;
+    onStateChange?.("reconnecting");
+  });
+  addListener("streamDisconnect", () => {
+    isStreaming = false;
+    beginReconnectLoop("Stream disconnected.");
+  });
+  addListener("dataChannelClose", () => {
+    isStreaming = false;
+    beginReconnectLoop("Data channel closed.");
+  });
+  addListener("statsReceived", (event) =>
+    {
+      lastStatsAt = Date.now();
+      onStats?.(event.data?.aggregatedStats || null);
+    });
+
+  const handleRetryableDisconnect = (event) => {
+    isStreaming = false;
+    const allowClickToReconnect = event?.data?.allowClickToReconnect;
+    const reason = event?.data?.eventString || "WebRTC disconnected.";
+
+    if (allowClickToReconnect === false) {
+      onStateChange?.("reconnecting");
+      return;
+    }
+
+    beginReconnectLoop(reason);
+  };
+
+  addListener("webRtcDisconnected", handleRetryableDisconnect);
+  addListener("webRtcFailed", () =>
+    beginReconnectLoop("WebRTC failed to connect."),
+  );
+  addListener("subscribeFailed", (event) =>
+    beginReconnectLoop(event?.data?.message || "Failed to subscribe to stream."),
+  );
+  addListener("playStreamError", (event) =>
+    beginReconnectLoop(event?.data?.message || "Failed to start stream playback."),
+  );
 
   onStateChange?.("connecting");
+  lastStatsAt = Date.now();
+  startHealthMonitor();
   pixelStreaming.connect();
 
   const setFlagEnabled = (flag, enabled) => {
@@ -97,7 +231,14 @@ export function createPixelStreamingSession({
     setMouseMode,
     requestPointerLock,
     refreshViewport,
+    reconnect() {
+      beginReconnectLoop("Manual reconnect requested.");
+    },
     destroy() {
+      isDestroyed = true;
+      isStreaming = false;
+      clearReconnectTimer();
+      clearHealthTimer();
       listeners.forEach(({ type, handler }) => {
         pixelStreaming.removeEventListener(type, handler);
       });
