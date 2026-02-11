@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import Button from "../components/Button";
 import ExperienceSkeleton from "../components/ExperienceSkeleton";
 import { useAuth } from "../context/AuthContext";
@@ -12,6 +13,7 @@ import {
 } from "../services/catalogService";
 import {
   getExperienceLeaderboard,
+  getLeaderboardOptionsForExperience,
   isLeaderboardEnabledForExperience,
 } from "../services/leaderboardService";
 
@@ -135,6 +137,9 @@ function SectionHeading({ eyebrow, title, copy }) {
 
 export default function ExperiencePage() {
   const { experienceId } = useParams();
+  const [selectedLeaderboardId, setSelectedLeaderboardId] = useState("");
+  const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
+  const boardMenuRef = useRef(null);
   const { user } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -156,13 +161,62 @@ export default function ExperiencePage() {
     [experienceId],
   );
 
+  const leaderboardOptions = useMemo(
+    () => getLeaderboardOptionsForExperience(experienceId),
+    [experienceId],
+  );
+
+  useEffect(() => {
+    setSelectedLeaderboardId(leaderboardOptions[0]?.id || "");
+    setIsBoardMenuOpen(false);
+  }, [leaderboardOptions, experienceId]);
+
+  const activeLeaderboardId =
+    selectedLeaderboardId || leaderboardOptions[0]?.id || "";
+
+  const activeLeaderboardLabel = useMemo(
+    () =>
+      leaderboardOptions.find((option) => option.id === activeLeaderboardId)
+        ?.label || "Select board",
+    [leaderboardOptions, activeLeaderboardId],
+  );
+
+  useEffect(() => {
+    if (!isBoardMenuOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (
+        boardMenuRef.current &&
+        !boardMenuRef.current.contains(event.target)
+      ) {
+        setIsBoardMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsBoardMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isBoardMenuOpen]);
+
   const {
     data: leaderboardRows = [],
     isLoading: isLeaderboardLoading,
   } = useQuery({
-    queryKey: ["leaderboard", experienceId],
-    queryFn: () => getExperienceLeaderboard(experienceId),
-    enabled: leaderboardEnabled,
+    queryKey: ["leaderboard", experienceId, activeLeaderboardId],
+    queryFn: () => getExperienceLeaderboard(experienceId, activeLeaderboardId),
+    enabled: leaderboardEnabled && Boolean(activeLeaderboardId),
     staleTime: 30_000,
   });
 
@@ -497,8 +551,79 @@ export default function ExperiencePage() {
               <SectionHeading
                 eyebrow="Competition"
                 title="Leaderboard"
-                copy="Top scores for this experience."
+                copy="Top scores for this experience. Switch board type below."
               />
+              {leaderboardOptions.length > 1 ? (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <label
+                    htmlFor="leaderboardMenu"
+                    className="text-xs font-semibold uppercase tracking-[0.2em] text-slate"
+                  >
+                    Board
+                  </label>
+                  <motion.div
+                    ref={boardMenuRef}
+                    className="relative w-full max-w-xs"
+                    initial={{ opacity: 0, y: 8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.5 }}
+                    transition={{ duration: 0.28, ease: "easeOut" }}
+                  >
+                    <button
+                      id="leaderboardMenu"
+                      type="button"
+                      onClick={() => setIsBoardMenuOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between rounded-xl border border-white/70 bg-white/95 px-4 py-2.5 text-left text-sm font-semibold text-ink shadow-soft transition hover:border-ink/20 focus:border-ink/30 focus:outline-none"
+                      aria-haspopup="listbox"
+                      aria-expanded={isBoardMenuOpen}
+                    >
+                      <span>{activeLeaderboardLabel}</span>
+                      <motion.span
+                        animate={{ rotate: isBoardMenuOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                      >
+                        <ChevronDown className="h-4 w-4 text-slate" />
+                      </motion.span>
+                    </button>
+
+                    <AnimatePresence>
+                      {isBoardMenuOpen ? (
+                        <motion.div
+                          className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-xl border border-white/70 bg-white/98 shadow-soft backdrop-blur"
+                          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <ul role="listbox" aria-label="Leaderboard type">
+                            {leaderboardOptions.map((option) => {
+                              const isActive = option.id === activeLeaderboardId;
+                              return (
+                                <li key={option.id}>
+                                  <button
+                                    type="button"
+                                    className={`w-full px-4 py-2.5 text-left text-sm transition ${
+                                      isActive
+                                        ? "bg-mist text-ink"
+                                        : "text-slate hover:bg-sand/50"
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedLeaderboardId(option.id);
+                                      setIsBoardMenuOpen(false);
+                                    }}
+                                  >
+                                    {option.label}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
+              ) : null}
               <div className="mt-6 overflow-hidden rounded-2xl border border-white/70 bg-white/85">
                 <table className="w-full table-fixed text-sm text-slate">
                   <thead className="border-b border-white/70 bg-sand/40 text-xs uppercase tracking-[0.2em] text-slate/90">
@@ -511,35 +636,50 @@ export default function ExperiencePage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {isLeaderboardLoading ? (
-                      <tr>
-                        <td className="px-4 py-4 text-slate" colSpan={2}>
-                          Loading leaderboard...
-                        </td>
-                      </tr>
-                    ) : leaderboardRows.length ? (
-                      leaderboardRows.map((row) => (
-                        <tr
-                          key={`${row.username}-${row.finalScore}`}
-                          className="border-t border-white/60"
-                        >
-                          <td className="truncate px-4 py-3 font-medium text-ink">
-                            {row.username}
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-ink">
-                            {row.finalScore.toLocaleString()}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.tbody
+                      key={`${activeLeaderboardId}-${isLeaderboardLoading ? "loading" : "ready"}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.24, ease: "easeOut" }}
+                    >
+                      {isLeaderboardLoading ? (
+                        <tr>
+                          <td className="px-4 py-4 text-slate" colSpan={2}>
+                            Loading leaderboard...
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className="px-4 py-4 text-slate" colSpan={2}>
-                          No scores yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
+                      ) : leaderboardRows.length ? (
+                        leaderboardRows.map((row, index) => (
+                          <motion.tr
+                            key={`${activeLeaderboardId}-${row.username}-${row.finalScore}`}
+                            className="border-t border-white/60"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              duration: 0.22,
+                              ease: "easeOut",
+                              delay: index * 0.03,
+                            }}
+                          >
+                            <td className="truncate px-4 py-3 font-medium text-ink">
+                              {row.username}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-ink">
+                              {row.finalScore.toLocaleString()}
+                            </td>
+                          </motion.tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-4 text-slate" colSpan={2}>
+                            No scores yet.
+                          </td>
+                        </tr>
+                      )}
+                    </motion.tbody>
+                  </AnimatePresence>
                 </table>
               </div>
             </motion.section>
